@@ -1,8 +1,8 @@
 /*
-Copyright © 2022 Ilias Karatsin hlias.karas.apps@gmail.com
-
+Package cmd
+Copyright © 2022 Ilias Karatsin <hlias.karas.apps@gmail.com>
 */
-package root
+package cmd
 
 import (
 	"os"
@@ -14,13 +14,11 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "fare-estimation",
 	Short: "A tool for estimating ride fares",
-	Long: `A Fare Estimation tool that provides command utilities for:
-
-1. Discarding erroneous coordinates out of path files.
-2. Evaluate the ride fares.`,
+	Long: `A Fare Estimation tool that provides command for producing the
+fare estimations of rides.`,
 }
 
-// Execute adds all child cmd to the root command and sets flags appropriately.
+// Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
@@ -29,14 +27,4 @@ func Execute() {
 	}
 }
 
-func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.fare-estimation.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
+func init() {}

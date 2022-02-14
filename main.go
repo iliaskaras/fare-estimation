@@ -1,13 +1,13 @@
 /*
-Copyright © 2022 Ilias Karatsin hlias.karas.apps@gmail.com
-
+Package main
+Copyright © 2022 Ilias Karatsin <hlias.karas.apps@gmail.com>
 */
 package main
 
 import (
-	"github.com/iliaskaras/fare-estimation/app/commands"
+	"github.com/iliaskaras/fare-estimation/app/cmd"
 )
 
 func main() {
-	commands.Execute()
+	cmd.Execute()
 }
