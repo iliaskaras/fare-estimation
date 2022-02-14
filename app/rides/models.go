@@ -8,14 +8,39 @@ import (
 	"strconv"
 )
 
+const (
+	MinimumHourKM float64 = 10.0
+)
+
+type RideSegment struct {
+	RideID          int
+	RidePositions   [2]RidePosition
+	Speed           float64
+	DistanceCovered float64
+}
+
+func NewRideSegment(
+	rideID int,
+	ridePositions [2]RidePosition,
+	speed float64,
+	distanceCovered float64,
+) *RideSegment {
+	return &RideSegment{
+		rideID,
+		ridePositions,
+		speed,
+		distanceCovered,
+	}
+}
+
 type RidePosition struct {
 	Id        int
 	Lat       float64
 	Lng       float64
-	Timestamp int
+	Timestamp int64
 }
 
-func NewRidePosition(id int, lat, lng float64, timestamp int) *RidePosition {
+func NewRidePosition(id int, lat, lng float64, timestamp int64) *RidePosition {
 	return &RidePosition{
 		id,
 		lat,
@@ -35,7 +60,7 @@ func Unmarshal(body []string) RidePosition {
 		int(id),
 		lat,
 		lng,
-		int(timestamp),
+		timestamp,
 	)
 
 	return *ridePosition

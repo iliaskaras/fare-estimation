@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	hourInSeconds = 3600
+	HourInSeconds = 3600
 	maxKMPerHour  = 100
 )
 
@@ -23,20 +23,20 @@ func NewRidePositionService(distanceCalculator distances.DistanceCalculatorServi
 	}
 }
 
-// FilterOnSegmentSpeed filters the erroneous RidePosition by using the segment speed as a filter.
+// FilterOnSegmentSpeed filters the erroneous RidePosition by using the segment Speed as a filter.
 // More specifically, is responsibly for filtering out the second RidePosition out of a consecutive RidePositions,
-// if the calculated speed km/hour > 100km.
-// - Receiver of the channel ridePositions,
-// - Pusher to the channel the filteredRidePositions, where all the filtered RidePosition are pushed.
+// if the calculated Speed km/hour > 100km.
+// - Receiver of the channel RidePositions,
+// - Pusher to the channel the rideSegments, where all the filtered RideSegment are pushed.
 func (ss *RidePositionService) FilterOnSegmentSpeed(
 	ridePositions <-chan []RidePosition,
-	filteredRidePositions chan<- []RidePosition,
-) error {
+	rideSegments chan<- []RideSegment,
+) {
 
-	// Receives the ridePositions.
+	// Receives the RidePositions.
 	for unfilteredRidePositions := range ridePositions {
 		ridePositionsSize := len(unfilteredRidePositions)
-		var _filteredRidePositions []RidePosition
+		var filteredRideSegments []RideSegment
 
 		i := 0
 		j := 1
@@ -45,9 +45,8 @@ func (ss *RidePositionService) FilterOnSegmentSpeed(
 			currentRidePosition := unfilteredRidePositions[i]
 
 			if j >= ridePositionsSize {
-				// Case where we are at the end of the ridePositions,
+				// Case where we are at the end of the RidePositions,
 				// and there is nothing to evaluate the current RidePosition with.
-				_filteredRidePositions = append(_filteredRidePositions, currentRidePosition)
 				break
 			}
 
@@ -64,7 +63,7 @@ func (ss *RidePositionService) FilterOnSegmentSpeed(
 				nextRidePosition.Lng,
 			)
 
-			segmentSpeed := (distanceCovered / float64(elapsedTimeSecs)) * hourInSeconds
+			segmentSpeed := (distanceCovered / float64(elapsedTimeSecs)) * HourInSeconds
 
 			// Sanity check on the segmentSpeed, if is greater than the maxKMPerHour,
 			// then this means that the check failed and the second part of the
@@ -77,21 +76,30 @@ func (ss *RidePositionService) FilterOnSegmentSpeed(
 			}
 
 			// The two RidePositions are valid entries, thus:
-			// 1. We are adding the currentRidePosition to the _filteredRidePositions.
+			// 1. We are adding the RideSegment of the current and previous RidePositions.
 			// 2. Changing the list indexes in such way that the current nextRidePosition will
 			//    become the currentRidePosition in the next loop, by changing current index
 			//    i to be equal to this loop's next index j, and the next iteration's
 			//	  next index j, to show on the immediate next item in the list.
-			_filteredRidePositions = append(_filteredRidePositions, currentRidePosition)
+			filteredRideSegments = append(
+				filteredRideSegments,
+				*NewRideSegment(
+					currentRidePosition.Id,
+					[2]RidePosition{
+						currentRidePosition,
+						nextRidePosition,
+					},
+					segmentSpeed,
+					distanceCovered,
+				),
+			)
 			i = j
 			j = i + 1
 		}
 
-		filteredRidePositions <- _filteredRidePositions
+		rideSegments <- filteredRideSegments
 
 	}
 
-	close(filteredRidePositions)
-
-	return nil
+	close(rideSegments)
 }

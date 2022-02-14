@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/iliaskaras/fare-estimation/app/distances"
+	"github.com/iliaskaras/fare-estimation/app/fares"
 	"github.com/iliaskaras/fare-estimation/app/files"
 	baseAppErrors "github.com/iliaskaras/fare-estimation/app/infrastructure/errors"
 	"github.com/iliaskaras/fare-estimation/app/rides"
@@ -44,7 +45,8 @@ The following steps are executed:
 		}
 
 		ridePositions := make(chan []rides.RidePosition)
-		filteredRidePositions := make(chan []rides.RidePosition)
+		rideSegments := make(chan []rides.RideSegment)
+		faresChan := make(chan fares.Fare)
 
 		go func() {
 			err := fileService.Read(filePath, ridePositions)
@@ -62,25 +64,24 @@ The following steps are executed:
 		)
 
 		go func() {
-			err := ridePositionService.FilterOnSegmentSpeed(ridePositions, filteredRidePositions)
-			if err != nil {
-				if errors.Is(err, baseAppErrors.InvalidInputError) {
-					fmt.Printf(err.Error())
-				}
-				fmt.Printf(err.Error())
-			}
+			ridePositionService.FilterOnSegmentSpeed(ridePositions, rideSegments)
 		}()
 
-		// TODO: Add the actual fare estimator.
-		var _filteredRidePositions []rides.RidePosition
-		for n := range filteredRidePositions {
-			_filteredRidePositions = append(_filteredRidePositions, n...)
-		}
+		fareService := fares.NewFareService()
+
+		go func() {
+			fareService.Estimate(rideSegments, faresChan)
+		}()
 
 		t := time.Now()
 		elapsed := t.Sub(start)
 
-		println(len(_filteredRidePositions))
+		var _fares []fares.Fare
+		for n := range faresChan {
+			_fares = append(_fares, n)
+		}
+
+		println(len(_fares))
 		println("run in: ", elapsed.Milliseconds())
 
 	},
