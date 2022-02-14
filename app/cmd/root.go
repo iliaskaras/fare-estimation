@@ -14,10 +14,8 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "fare-estimation",
 	Short: "A tool for estimating ride fares",
-	Long: `A Fare Estimation tool that provides command utilities for:
-
-1. Cleans out erroneous coordinates out of ride coordinate content files.
-2. Evaluate the ride fares.`,
+	Long: `A Fare Estimation tool that provides command for producing the
+fare estimations of rides.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
