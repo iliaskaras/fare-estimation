@@ -50,11 +50,15 @@ func NewRidePosition(id int, lat, lng float64, timestamp int64) *RidePosition {
 }
 
 // Unmarshal Will unmarshal the provided body which is an array of strings, to a new RidePosition
-func Unmarshal(body []string) RidePosition {
-	id, _ := strconv.ParseInt(body[0], 0, 0)
-	lat, _ := strconv.ParseFloat(body[1], 64)
-	lng, _ := strconv.ParseFloat(body[2], 64)
-	timestamp, _ := strconv.ParseInt(body[3], 0, 0)
+func Unmarshal(body []string) (*RidePosition, error) {
+	id, errId := strconv.ParseInt(body[0], 0, 0)
+	lat, errLat := strconv.ParseFloat(body[1], 64)
+	lng, errLng := strconv.ParseFloat(body[2], 64)
+	timestamp, errTimestamp := strconv.ParseInt(body[3], 0, 0)
+
+	if errId != nil || errLat != nil || errLng != nil || errTimestamp != nil {
+		return nil, ErrorParsingRidePosition
+	}
 
 	ridePosition := NewRidePosition(
 		int(id),
@@ -63,5 +67,5 @@ func Unmarshal(body []string) RidePosition {
 		timestamp,
 	)
 
-	return *ridePosition
+	return ridePosition, nil
 }

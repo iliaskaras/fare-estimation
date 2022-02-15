@@ -1,3 +1,7 @@
+/*
+Package files
+Copyright © 2022 Ilias Karatsin <hlias.karas.apps@gmail.com>
+*/
 package files
 
 import (

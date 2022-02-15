@@ -27,6 +27,12 @@ func (ss *FareService) Estimate(
 	// Receives the rideSegmentsChan.
 	for rideSegments := range rideSegmentsChan {
 		fareAmount := StandardFare
+
+		// Case where the RideID had only one RidePosition in the input file.
+		if rideSegments == nil {
+			continue
+		}
+
 		rideID := rideSegments[0].RideID
 
 		for _, rideSegment := range rideSegments {
