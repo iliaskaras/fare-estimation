@@ -11,12 +11,6 @@ import (
 	"testing"
 )
 
-type GetFileServiceTestCase struct {
-	distanceMethod string
-	expectedResult DistanceCalculatorService
-	expectedError  DistanceMethodError
-}
-
 // Tests the GetDistanceCalculatorService return a haversine implementor based on the requested distanceMethod.
 func TestGetDistanceCalculatorServiceReturnHaversine(t *testing.T) {
 	distanceCalculatorService, err := GetDistanceCalculatorService(HaversineMethod)
