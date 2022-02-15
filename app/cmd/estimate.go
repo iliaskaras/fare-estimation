@@ -10,7 +10,6 @@ import (
 	"github.com/iliaskaras/fare-estimation/app/distances"
 	"github.com/iliaskaras/fare-estimation/app/fares"
 	"github.com/iliaskaras/fare-estimation/app/files"
-	baseAppErrors "github.com/iliaskaras/fare-estimation/app/infrastructure/errors"
 	"github.com/iliaskaras/fare-estimation/app/rides"
 	"github.com/spf13/cobra"
 	"os"
@@ -34,6 +33,7 @@ The following steps are executed:
 		start := time.Now()
 
 		filePath, _ := cmd.Flags().GetString("filepath")
+		output, _ := cmd.Flags().GetString("output")
 
 		fileService, err := files.GetFileService(filePath)
 
@@ -51,9 +51,6 @@ The following steps are executed:
 		go func() {
 			err := fileService.Read(filePath, ridePositions)
 			if err != nil {
-				if errors.Is(err, baseAppErrors.InvalidInputError) {
-					fmt.Printf(err.Error())
-				}
 				fmt.Printf(err.Error())
 			}
 		}()
@@ -73,16 +70,20 @@ The following steps are executed:
 			fareService.Estimate(rideSegments, faresChan)
 		}()
 
+		fileWriteFinishChan, err := fileService.Write(output, faresChan)
+		if err != nil {
+			fmt.Printf(err.Error())
+		}
+
+		select {
+		case <-fileWriteFinishChan:
+			fmt.Println("finish writing fare estimation file")
+		}
+
 		t := time.Now()
 		elapsed := t.Sub(start)
 
-		var _fares []fares.Fare
-		for n := range faresChan {
-			_fares = append(_fares, n)
-		}
-
-		println(len(_fares))
-		println("run in: ", elapsed.Milliseconds())
+		fmt.Println("Fare estimation took:", elapsed.Milliseconds(), "ms")
 
 	},
 }
@@ -92,5 +93,8 @@ func init() {
 
 	estimateCmd.Flags().StringP(
 		"filepath", "f", "", "The file path contains information about rides",
+	)
+	estimateCmd.Flags().StringP(
+		"output", "o", "", "The output file path that the fare estimations will be persisted",
 	)
 }
