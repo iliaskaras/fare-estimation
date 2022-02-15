@@ -10,4 +10,5 @@ import (
 
 var (
 	ErrorParsingRidePosition = errors.New("error while parsing ride position")
+	InvalidLPosition         = errors.New("error while parsing ride position")
 )

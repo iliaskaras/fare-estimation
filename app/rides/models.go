@@ -60,6 +60,8 @@ func Unmarshal(body []string) (*RidePosition, error) {
 		return nil, ErrorParsingRidePosition
 	}
 
+	// There should be a sanity check for lat and lng as well, but there
+	// is no information about their formats in the file input.
 	ridePosition := NewRidePosition(
 		int(id),
 		lat,
