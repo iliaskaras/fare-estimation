@@ -11,7 +11,7 @@ const (
 )
 
 type DistanceCalculatorService interface {
-	GetDistance(lat1Degree, lng1Degree, lat2Degree, lng2Degree float64) (float64, error)
+	GetDistance(lat1Degree, lng1Degree, lat2Degree, lng2Degree float64) float64
 }
 
 // HaversineDistanceService is the DistanceCalculatorService implementor that calculates distance using the
@@ -27,7 +27,7 @@ func NewHaversineDistanceService() DistanceCalculatorService {
 // https://www.igismap.com/haversine-formula-calculate-geographic-distance-earth/.
 func (hs *HaversineDistanceService) GetDistance(
 	lat1Degree, lng1Degree, lat2Degree, lng2Degree float64,
-) (float64, error) {
+) float64 {
 
 	lat1R := mapDegreesToRadians(lat1Degree)
 	lng1R := mapDegreesToRadians(lng1Degree)
@@ -45,5 +45,5 @@ func (hs *HaversineDistanceService) GetDistance(
 	//d = R*c
 	distance := earthKmRadius * c
 
-	return distance, nil
+	return distance
 }

@@ -56,7 +56,7 @@ func (ss *RidePositionService) FilterOnSegmentSpeed(
 			elapsedTimeSecs := nextRidePosition.Timestamp - currentRidePosition.Timestamp
 
 			// Calculate the distance covered.
-			distanceCovered, _ := ss.distanceCalculator.GetDistance(
+			distanceCovered := ss.distanceCalculator.GetDistance(
 				currentRidePosition.Lat,
 				currentRidePosition.Lng,
 				nextRidePosition.Lat,
