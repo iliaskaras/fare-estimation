@@ -24,17 +24,17 @@ func NewRidePositionService(distanceCalculator distances.DistanceCalculatorServi
 }
 
 // FilterOnSegmentSpeed filters the erroneous RidePosition by using the segment Speed as a filter.
-// More specifically, is responsibly for filtering out the second RidePosition out of a consecutive RidePositions,
+// More specifically, is responsibly for filtering out the second RidePosition out of a RideSegment,
 // if the calculated Speed km/hour > 100km.
-// - Receiver of the channel RidePositions,
-// - Pusher to the channel the rideSegments, where all the filtered RideSegment are pushed.
+// - Receiver of the channel ridePositionsChan,
+// - Pusher to the channel the rideSegmentsChan, where all the filtered RideSegment are pushed.
 func (ss *RidePositionService) FilterOnSegmentSpeed(
-	ridePositions <-chan []RidePosition,
-	rideSegments chan<- []RideSegment,
+	ridePositionsChan <-chan []RidePosition,
+	rideSegmentsChan chan<- []RideSegment,
 ) {
 
 	// Receives the RidePositions.
-	for unfilteredRidePositions := range ridePositions {
+	for unfilteredRidePositions := range ridePositionsChan {
 		ridePositionsSize := len(unfilteredRidePositions)
 		var filteredRideSegments []RideSegment
 
@@ -97,9 +97,8 @@ func (ss *RidePositionService) FilterOnSegmentSpeed(
 			j = i + 1
 		}
 
-		rideSegments <- filteredRideSegments
+		rideSegmentsChan <- filteredRideSegments
 
 	}
 
-	close(rideSegments)
 }
