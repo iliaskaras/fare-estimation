@@ -73,7 +73,11 @@ func (fs *csvFileService) Read(
 			return NewFileError(err, "failure on reading file records")
 		}
 
-		ridePos := rides.Unmarshal(fileRecord)
+		ridePos, unmarshalErr := rides.Unmarshal(fileRecord)
+		// Skip entry in case there is an error during unmarshal.
+		if unmarshalErr != nil {
+			continue
+		}
 
 		// Initialize the current RideID in the first iteration.
 		if currentRideID != ridePos.Id {
@@ -85,7 +89,7 @@ func (fs *csvFileService) Read(
 
 		if seenPositions, ok := positionsInRide[currentRideID]; ok {
 			// If the RideID already exist in the positionsInRide map, update its seenPositions.
-			positionsInRide[currentRideID] = append(seenPositions, ridePos)
+			positionsInRide[currentRideID] = append(seenPositions, *ridePos)
 		} else {
 			// Means we have a new RideID, and due to the fact that the file is sorted already by
 			// RideID, we can safely push the positions found for the previously encountered RideID
@@ -94,7 +98,7 @@ func (fs *csvFileService) Read(
 				ridePositionsChan <- previousRidePositions
 				delete(positionsInRide, previousRideID)
 			}
-			positionsInRide[currentRideID] = append(seenPositions, ridePos)
+			positionsInRide[currentRideID] = append(seenPositions, *ridePos)
 		}
 
 	}
