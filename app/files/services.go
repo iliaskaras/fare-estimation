@@ -6,16 +6,17 @@ package files
 
 import (
 	"encoding/csv"
-	"fmt"
+	"github.com/iliaskaras/fare-estimation/app/fares"
 	baseAppErrors "github.com/iliaskaras/fare-estimation/app/infrastructure/errors"
 	"github.com/iliaskaras/fare-estimation/app/rides"
 	"io"
+	"log"
 	"os"
 )
 
 type FileService interface {
 	Read(filePath string, ridePositions chan<- []rides.RidePosition) error
-	Write()
+	Write(output string, faresChan <-chan fares.Fare) (<-chan bool, error)
 }
 
 // csvFileService is the FileService implementor responsible for operating on .csv type of files.
@@ -26,12 +27,13 @@ func newCSVFileService() FileService {
 }
 
 // Read parses a file that contain rows of ride positions, unmarshal the entries and
-// pushes the ride positions to the ridePositions channel for further processing by
+// pushes the ride positions to the ridePositionsChan channel for further processing by
 // its receivers. The file is already sorted by RideID, and it makes a single push
 // to the channel for each RideID encountered through the file parsing.
+// - Pusher to the channel ridePositionsChan, where all the encountered RidePosition are pushed.
 func (fs *csvFileService) Read(
 	filePath string,
-	ridePositions chan<- []rides.RidePosition,
+	ridePositionsChan chan<- []rides.RidePosition,
 ) error {
 	if filePath == "" {
 		return baseAppErrors.NewBaseAppError(
@@ -47,19 +49,19 @@ func (fs *csvFileService) Read(
 	}
 	defer file.Close()
 
-	parser := csv.NewReader(file)
+	reader := csv.NewReader(file)
 
 	positionsInRide := make(map[int][]rides.RidePosition)
 	currentRideID := -1
 	previousRideID := -1
 
 	for {
-		fileRecord, err := parser.Read()
+		fileRecord, err := reader.Read()
 
 		if err == io.EOF {
 			// Makes sure to push the last RideID's RidePositions to the channel.
 			if currentRidePositions, ok := positionsInRide[currentRideID]; ok {
-				ridePositions <- currentRidePositions
+				ridePositionsChan <- currentRidePositions
 				delete(positionsInRide, currentRideID)
 			}
 			break
@@ -84,9 +86,9 @@ func (fs *csvFileService) Read(
 		} else {
 			// Means we have a new RideID, and due to the fact that the file is sorted already by
 			// RideID, we can safely push the positions found for the previously encountered RideID
-			// to the ridePositions channel for further processing by the receivers.
+			// to the ridePositionsChan channel for further processing by the receivers.
 			if previousRidePositions, ok := positionsInRide[previousRideID]; ok {
-				ridePositions <- previousRidePositions
+				ridePositionsChan <- previousRidePositions
 				delete(positionsInRide, previousRideID)
 			}
 			positionsInRide[currentRideID] = append(seenPositions, ridePos)
@@ -94,12 +96,45 @@ func (fs *csvFileService) Read(
 
 	}
 
-	// Since Read is the sender function of the ridePositions channel, we close it here.
-	close(ridePositions)
+	// Since Read is the sender function of the ridePositionsChan channel, we close it here.
+	close(ridePositionsChan)
 
 	return nil
 }
 
-func (fs *csvFileService) Write() {
-	fmt.Printf("CSV file service Write() called!")
+// Write writes line by line, to the output file the fare estimates, each line represents
+// the Fare Estimation of a single RideID.
+// - Pusher to the channel fileWriteFinishChan, a flag channel indicating when the writing is finish.
+//	 Used to block the main goroutine and force it wait Write to finish.
+// - Receiver to the channel faresChan, where all the estimated Fares are pushed.
+func (fs *csvFileService) Write(
+	output string,
+	faresChan <-chan fares.Fare,
+) (<-chan bool, error) {
+	fileWriteFinishChan := make(chan bool)
+
+	file, err := os.Create(output)
+	if err != nil {
+		return nil, NewFileError(err, "unable to create the file")
+	}
+
+	writer := csv.NewWriter(file)
+
+	go func() {
+		for fare := range faresChan {
+			err := writer.Write(fare.ToStrings())
+			if err != nil {
+				log.Println("failure while writing fare estimation with rideID: ", fare.RideID)
+			}
+		}
+		// Flush the writer and close the file.
+		writer.Flush()
+		file.Close()
+
+		fileWriteFinishChan <- true
+
+		close(fileWriteFinishChan)
+	}()
+
+	return fileWriteFinishChan, nil
 }
