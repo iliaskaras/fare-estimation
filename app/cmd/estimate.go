@@ -53,6 +53,7 @@ The following steps are executed:
 			err := fileService.Read(filePath, ridePositionsChan)
 			if err != nil {
 				fmt.Printf(err.Error())
+				os.Exit(1)
 			}
 		}()
 
@@ -81,16 +82,16 @@ The following steps are executed:
 
 		go fareService.Estimate(rideSegmentsChan, faresChan)
 
-		err = fileService.Write(output, faresChan)
+		_, err = fileService.Write(output, faresChan)
 		if err != nil {
 			fmt.Printf(err.Error())
+			os.Exit(1)
 		}
 
 		t := time.Now()
 		elapsed := t.Sub(start)
 
 		fmt.Println("Fare estimation took:", elapsed.Milliseconds(), "ms")
-
 	},
 }
 

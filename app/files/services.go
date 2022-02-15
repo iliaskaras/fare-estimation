@@ -16,7 +16,7 @@ import (
 
 type FileService interface {
 	Read(filePath string, ridePositionsChan chan<- []rides.RidePosition) error
-	Write(output string, faresChan <-chan fares.Fare) error
+	Write(output string, faresChan <-chan fares.Fare) (bool, error)
 }
 
 // csvFileService is the FileService implementor responsible for operating on .csv type of files.
@@ -35,6 +35,9 @@ func (fs *csvFileService) Read(
 	filePath string,
 	ridePositionsChan chan<- []rides.RidePosition,
 ) error {
+	// Since Read is the sender function of the ridePositionsChan channel, we close it here.
+	defer close(ridePositionsChan)
+
 	if filePath == "" {
 		return baseAppErrors.NewBaseAppError(
 			baseAppErrors.InvalidInputError,
@@ -96,23 +99,21 @@ func (fs *csvFileService) Read(
 
 	}
 
-	// Since Read is the sender function of the ridePositionsChan channel, we close it here.
-	close(ridePositionsChan)
-
 	return nil
 }
 
 // Write writes line by line, to the output file the fare estimates, each line represents
 // the Fare Estimation of a single RideID.
+// - Pusher to the channel fileWriteFinishChan, a flag channel indicating when the writing is finish.
+//	 Used to block the main goroutine and force it wait Write to finish.
 // - Receiver to the channel faresChan, where all the estimated Fares are pushed.
 func (fs *csvFileService) Write(
 	output string,
 	faresChan <-chan fares.Fare,
-) error {
-
+) (bool, error) {
 	file, err := os.Create(output)
 	if err != nil {
-		return NewFileError(err, "unable to create the file")
+		return false, NewFileError(err, "unable to create the file")
 	}
 
 	writer := csv.NewWriter(file)
@@ -128,5 +129,5 @@ func (fs *csvFileService) Write(
 	writer.Flush()
 	file.Close()
 
-	return nil
+	return true, nil
 }
