@@ -13,6 +13,7 @@ import (
 	"github.com/iliaskaras/fare-estimation/app/rides"
 	"github.com/spf13/cobra"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -44,12 +45,12 @@ The following steps are executed:
 			}
 		}
 
-		ridePositions := make(chan []rides.RidePosition)
-		rideSegments := make(chan []rides.RideSegment)
+		ridePositionsChan := make(chan []rides.RidePosition)
+		rideSegmentsChan := make(chan []rides.RideSegment)
 		faresChan := make(chan fares.Fare)
 
 		go func() {
-			err := fileService.Read(filePath, ridePositions)
+			err := fileService.Read(filePath, ridePositionsChan)
 			if err != nil {
 				fmt.Printf(err.Error())
 			}
@@ -60,24 +61,29 @@ The following steps are executed:
 			distanceCalculatorMethod,
 		)
 
+		var wg sync.WaitGroup
+
+		for x := 1; x <= 4; x++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				ridePositionService.FilterOnSegmentSpeed(ridePositionsChan, rideSegmentsChan)
+			}()
+
+		}
+
 		go func() {
-			ridePositionService.FilterOnSegmentSpeed(ridePositions, rideSegments)
+			wg.Wait()
+			close(rideSegmentsChan)
 		}()
 
 		fareService := fares.NewFareService()
 
-		go func() {
-			fareService.Estimate(rideSegments, faresChan)
-		}()
+		go fareService.Estimate(rideSegmentsChan, faresChan)
 
-		fileWriteFinishChan, err := fileService.Write(output, faresChan)
+		err = fileService.Write(output, faresChan)
 		if err != nil {
 			fmt.Printf(err.Error())
-		}
-
-		select {
-		case <-fileWriteFinishChan:
-			fmt.Println("finish writing fare estimation file")
 		}
 
 		t := time.Now()
