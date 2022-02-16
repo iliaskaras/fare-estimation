@@ -5,7 +5,6 @@ Copyright © 2022 Ilias Karatsin <hlias.karas.apps@gmail.com>
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/iliaskaras/fare-estimation/app/distances"
 	"github.com/iliaskaras/fare-estimation/app/fares"
@@ -36,13 +35,20 @@ The following steps are executed:
 		filePath, _ := cmd.Flags().GetString("filepath")
 		output, _ := cmd.Flags().GetString("output")
 
+		if filePath == "" {
+			fmt.Println("You need to provide the file path, -h for more information")
+			os.Exit(1)
+		}
+		if output == "" {
+			fmt.Println("You need to provide the output, -h for more information")
+			os.Exit(1)
+		}
+
 		fileService, err := files.GetFileService(filePath)
 
 		if err != nil {
-			if errors.Is(err, files.UnsupportedFileType) {
-				fmt.Printf(err.Error())
-				os.Exit(1)
-			}
+			fmt.Println(err.Error())
+			os.Exit(1)
 		}
 
 		ridePositionsChan := make(chan []rides.RidePosition)
