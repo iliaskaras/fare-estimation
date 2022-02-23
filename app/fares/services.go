@@ -41,10 +41,10 @@ func (ss *FareService) Estimate(
 
 				if startHour >= 0 && startHour < 5 {
 					// Night, time after 0 and before 5 the morning.
-					fareAmount += (rideSegment.DistanceCovered / 1000) * MovingNight
+					fareAmount += (rideSegment.DistanceCovered) * MovingNight
 				} else {
 					// Day time after 5 the morning and before 24.
-					fareAmount += (rideSegment.DistanceCovered / 1000) * MovingDay
+					fareAmount += (rideSegment.DistanceCovered) * MovingDay
 				}
 
 			} else {
